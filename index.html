@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="config.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Hash Pigs</title>
+<meta name="description" content="Hash Pigs. A pig you have to dig up. Your browser hashes until one lands below the target, the hash draws the pig." />
+<link rel="icon" type="image/png" href="assets/img/favicon.png" />
+<link rel="apple-touch-icon" href="assets/img/apple-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Azeret+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+:root{--mud:#1a120c;--panel:#241a12;--line:#4a3322;--paper:#f7e9dc;--dim:#a08a78;--pink:#ff7fa8;--copper:#d98a4a;--hot:#e0405a;--pad:clamp(14px,2.6vw,32px)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--mud);color:var(--paper);font-family:"Azeret Mono",ui-monospace,monospace;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(circle at 20% 0%,#3a2416,transparent 45%),repeating-linear-gradient(0deg,transparent 0 22px,rgba(255,127,168,.035) 22px 23px)}
+img,canvas{display:block;max-width:100%}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.wrap{position:relative;z-index:1;width:min(1120px,100%);margin:0 auto;padding:var(--pad);display:grid;gap:clamp(14px,2.2vw,24px)}
+/* a plank */
+.panel{background:var(--panel);border:4px solid var(--line);border-radius:6px;box-shadow:0 8px 0 #0e0805;overflow:hidden;position:relative}
+.panel:before{content:"";position:absolute;left:10px;top:8px;width:6px;height:6px;background:var(--copper);box-shadow:calc(100% + 0px) 0 0 var(--copper);border-radius:50%;z-index:2}
+.panel:after{content:"";position:absolute;right:10px;top:8px;width:6px;height:6px;background:var(--copper);border-radius:50%;z-index:2}
+.face{padding:clamp(18px,2.8vw,32px)}
+/* hero: picture left, words right */
+.hero .face{display:grid;grid-template-columns:minmax(220px,320px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:center}
+.wm{font-family:"Jersey 10",sans-serif;font-size:clamp(64px,11vw,140px);line-height:.82;color:var(--pink);text-shadow:5px 5px 0 #6b2a44}
+.wm i{font-style:normal;color:var(--copper);text-shadow:5px 5px 0 #5a3416}
+.tag{margin-top:12px;font-size:clamp(14px,1.8vw,18px);color:var(--paper)}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{display:inline-flex;align-items:center;gap:9px;height:46px;padding:0 18px;border:3px solid var(--copper);background:#1a120c;color:var(--paper);font-family:"Jersey 10",sans-serif;font-size:24px;letter-spacing:.02em;box-shadow:0 5px 0 #5a3416;transition:transform .08s,box-shadow .08s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 0 #5a3416}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #5a3416}
+.btn.go{background:var(--pink);border-color:var(--pink);color:#2a0d18;box-shadow:0 5px 0 #6b2a44}
+.btn.go:active{box-shadow:0 2px 0 #6b2a44}
+.btn img{width:18px;height:18px;object-fit:contain}
+.hero .pic{border:4px solid var(--copper);box-shadow:0 8px 0 #5a3416;background:#000;transform:rotate(-1.5deg)}
+/* dig: reveal left, numbers right */
+.mine{display:grid;grid-template-columns:280px minmax(0,1fr);gap:clamp(16px,3vw,36px);align-items:start}
+.reveal{border:4px solid var(--line);background:#1a120c;padding:14px;display:grid;justify-items:center;gap:10px}
+.reveal canvas{width:216px;height:216px;border:3px solid var(--line);background:#000}
+.reveal .id{font-family:"Jersey 10",sans-serif;font-size:34px;line-height:1;color:var(--copper)}
+.reveal .tr{font-size:11px;letter-spacing:.06em;color:var(--dim);text-align:center;min-height:16px}
+.reveal.flash canvas{animation:flash .9s steps(3)}
+@keyframes flash{0%{filter:brightness(4) contrast(0)}60%{filter:brightness(2)}100%{filter:none}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{border-bottom:3px solid var(--line);padding:6px 0 10px}
+.stat b{display:block;font-family:"Jersey 10",sans-serif;font-size:clamp(30px,3.6vw,44px);line-height:.9;color:var(--pink);font-variant-numeric:tabular-nums}
+.stat span{display:block;margin-top:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.hashline{margin-top:14px;padding:10px 12px;background:#1a120c;border-left:4px solid var(--copper);font-size:12px;color:var(--dim);word-break:break-all;min-height:44px}
+.hashline b{color:var(--paper);font-weight:400}
+.big{margin-top:14px;width:100%;height:64px;font-family:"Jersey 10",sans-serif;font-size:36px;letter-spacing:.06em;background:var(--copper);color:#1a120c;border:0;box-shadow:0 6px 0 #5a3416}
+.big.on{background:var(--hot);color:#fff;box-shadow:0 6px 0 #6b1f2a}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #5a3416}
+/* the sty */
+.grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+.grid button{padding:0;border:3px solid var(--line);background:#000;transition:transform .12s,border-color .12s}
+.grid button:hover{transform:translateY(-3px);border-color:var(--pink)}
+.grid canvas{width:100%;height:auto;aspect-ratio:1}
+.empty{color:var(--dim);font-size:13px}
+/* contract */
+.ca-block{cursor:pointer}
+dl.t{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 24px}
+dl.t div{padding:8px 0;border-bottom:2px solid var(--line)}
+dl.t div.full{grid-column:1/-1}
+dl.t dt{font-family:"Jersey 10",sans-serif;font-size:20px;letter-spacing:.04em;color:var(--dim)}
+dl.t dd{color:var(--paper)}
+.ca{word-break:break-all;color:var(--pink)}
+.note{margin-top:12px;color:var(--dim);font-size:13px}
+.end{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:"Jersey 10",sans-serif;font-size:18px;letter-spacing:.04em;color:var(--dim);padding:6px 4px 20px}
+/* lightbox */
+.lb{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:var(--pad);background:rgba(26,18,12,.94)}
+.lb.on{display:grid}
+.lbin{width:min(520px,100%);background:var(--panel);border:4px solid var(--copper);box-shadow:0 8px 0 #0e0805;padding:16px;display:grid;justify-items:center;gap:10px}
+.lbin canvas{width:min(408px,80vw);height:auto;aspect-ratio:1;border:3px solid var(--line);background:#000}
+.lbin .id{font-family:"Jersey 10",sans-serif;font-size:36px;line-height:1;color:var(--copper)}
+.lbin .hx{font-size:11px;color:var(--dim);word-break:break-all;text-align:center}
+.lbbar{display:flex;gap:6px;align-items:center;font-family:"Jersey 10",sans-serif;font-size:22px}
+.lbbar button{width:44px;height:38px;border:3px solid var(--line);background:#1a120c;font-size:22px;line-height:1}
+@media (max-width:860px){
+  .hero .face{grid-template-columns:1fr} .hero .pic{max-width:280px;margin:0 auto;transform:none}
+  .mine{grid-template-columns:1fr} .reveal{justify-items:center}
+  .stats{grid-template-columns:1fr 1fr}
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  dl.t{grid-template-columns:1fr}
+  .wm{font-size:clamp(64px,19vw,110px)}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="panel hero">
+    <div class="face">
+      <div class="pic"><img src="assets/img/hero.webp" alt="A pixel-art pink pig miner with a copper hard hat and a shovel in a muddy mine" /></div>
+      <div>
+        <h1 class="wm">Hash<br /><i>Pigs</i></h1>
+        <p class="tag">a pig you have to dig up</p>
+        <div class="acts">
+          <a class="btn go" data-link="pons" href="https://www.ponsfamily.com/launchpad"><img src="assets/img/pons.png" alt="" />Get on Pons</a>
+          <a class="btn" data-link="x" href="https://x.com" aria-label="X"><img src="assets/img/x.svg" alt="X" style="filter:invert(1)" /></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="face mine">
+      <div class="reveal" id="reveal"><canvas id="rc" width="24" height="24"></canvas><div class="id" id="rid">#——</div><div class="tr" id="rtr"></div></div>
+      <div>
+        <div class="stats">
+          <div class="stat"><b id="rate">0</b><span>hashes / s</span></div>
+          <div class="stat"><b id="diff">—</b><span>depth</span></div>
+          <div class="stat"><b id="eta">—</b><span>next pig in</span></div>
+          <div class="stat"><b id="tries">0</b><span>shovels of dirt</span></div>
+          <div class="stat"><b id="mined">0</b><span>pigs dug up here</span></div>
+          <div class="stat"><b id="supply">16 384</b><span>pigs underground</span></div>
+        </div>
+        <div class="hashline" id="hashline">press dig. your browser hashes until one lands below the target</div>
+        <button class="big" id="go">DIG</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="face"><div class="grid" id="grid"></div><p class="empty" id="empty">the sty is empty. dig</p></div>
+  </section>
+
+  <section class="panel ca-block" id="cab" title="Copy contract">
+    <div class="face">
+      <dl class="t">
+        <div><dt>Name</dt><dd data-name>Hash Pigs</dd></div>
+        <div><dt>Ticker</dt><dd data-ticker>$HASHPIGS</dd></div>
+        <div><dt>Chain</dt><dd>Robinhood Chain</dd></div>
+        <div><dt>Launchpad</dt><dd>Pons</dd></div>
+        <div class="full"><dt>Contract</dt><dd><span class="ca" id="ca">soon</span></dd></div>
+      </dl>
+      <p class="note" id="cp">tap the plank to copy</p>
+      <div class="acts">
+        <a class="btn go" data-link="pons" href="https://www.ponsfamily.com/launchpad"><img src="assets/img/pons.png" alt="" />Get on Pons</a>
+        <a class="btn" data-link="dex" href="https://dexscreener.com/robinhood">Chart</a>
+        <a class="btn" data-link="x" href="https://x.com" aria-label="X"><img src="assets/img/x.svg" alt="X" style="filter:invert(1)" /></a>
+      </div>
+    </div>
+  </section>
+
+  <div class="end"><span data-name>Hash Pigs</span><span>not financial advice</span></div>
+</main>
+
+<div class="lb" id="lb"><div class="lbin"><canvas id="lc" width="24" height="24"></canvas><div class="id" id="lid"></div><div class="hx" id="lhx"></div><div class="lbbar"><button id="lbprev" aria-label="Previous">&#8249;</button><span id="lbn" style="padding:0 6px"></span><button id="lbnext" aria-label="Next">&#8250;</button><button id="lbx" aria-label="Close">&#10005;</button></div></div></div>
+
+<script src="pig.js"></script>
+<script>
+(function(){
+  var S = window.SITE, CA = (S.CA || "SOON").trim(), HAS = CA !== "SOON" && CA !== "";
+  document.querySelectorAll('[data-name]').forEach(function(e){ e.textContent = S.NAME; });
+  document.querySelectorAll('[data-ticker]').forEach(function(e){ e.textContent = S.TICKER; });
+  document.title = S.NAME;
+  document.querySelectorAll('[data-link="pons"]').forEach(function(a){ a.href = HAS ? window.PONS_HOME + '/' + CA : window.PONS_HOME; a.target = '_blank'; a.rel = 'noopener'; });
+  document.querySelectorAll('[data-link="dex"]').forEach(function(a){ a.href = HAS ? window.DEX_HOME + '/' + CA : window.DEX_HOME; a.target = '_blank'; a.rel = 'noopener'; });
+  document.querySelectorAll('[data-link="x"]').forEach(function(a){ a.href = S.X_URL || 'https://x.com'; a.target = '_blank'; a.rel = 'noopener'; });
+  var ca = document.getElementById('ca'), cp = document.getElementById('cp'); ca.textContent = HAS ? CA : 'soon';
+  document.getElementById('cab').addEventListener('click', function(){ var old = cp.textContent; if(HAS){ if(navigator.clipboard) navigator.clipboard.writeText(CA); cp.textContent = 'copied'; } else cp.textContent = 'not yet'; setTimeout(function(){ cp.textContent = old; }, 1300); });
+
+  /* the sty: what this machine dug up */
+  var KEY = 'hashpigs', col = []; try{ col = JSON.parse(localStorage.getItem(KEY) || '[]'); }catch(e){}
+  var grid = document.getElementById('grid'), empty = document.getElementById('empty'), cur = 0;
+  function idOf(hash){ return parseInt(hash.slice(-4), 16) % 16384; }
+  function renderCol(){ grid.innerHTML = ''; col.forEach(function(m, i){ var b = document.createElement('button'), c = document.createElement('canvas'); Pig.draw(c, m.hash); b.appendChild(c); b.dataset.i = i; b.setAttribute('aria-label', '#' + idOf(m.hash)); grid.appendChild(b); }); empty.hidden = col.length > 0; document.getElementById('mined').textContent = col.length; }
+  renderCol();
+  var lb = document.getElementById('lb'), lc = document.getElementById('lc'), lid = document.getElementById('lid'), lhx = document.getElementById('lhx'), lbn = document.getElementById('lbn');
+  function show(i){ if(!col.length) return; cur = (i + col.length) % col.length; var m = col[cur]; var t = Pig.draw(lc, m.hash); lid.textContent = '#' + idOf(m.hash) + ' · ' + Pig.label(t); lhx.textContent = m.hash; lbn.textContent = (cur + 1) + ' / ' + col.length; lb.classList.add('on'); }
+  grid.addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) show(+b.dataset.i); });
+  document.getElementById('lbprev').onclick = function(){ show(cur - 1); };
+  document.getElementById('lbnext').onclick = function(){ show(cur + 1); };
+  document.getElementById('lbx').onclick = function(){ lb.classList.remove('on'); };
+  lb.addEventListener('click', function(e){ if(e.target === lb) lb.classList.remove('on'); });
+  addEventListener('keydown', function(e){ if(!lb.classList.contains('on')) return; if(e.key === 'Escape') lb.classList.remove('on'); if(e.key === 'ArrowLeft') show(cur - 1); if(e.key === 'ArrowRight') show(cur + 1); });
+
+  /* the dig: sha256(seed:nonce) below target. depth retargets so a pig takes about 45 s on this machine */
+  var seed = (function(){ var s = localStorage.getItem(KEY + ':seed'); if(!s){ s = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(function(b){ return (b < 16 ? '0' : '') + b.toString(16); }).join(''); localStorage.setItem(KEY + ':seed', s); } return s; })();
+  var W = null, on = false, rate = 0, tries = 0, diff = +(localStorage.getItem(KEY + ':diff') || 20000), TARGET_S = 45;
+  var go = document.getElementById('go'), hl = document.getElementById('hashline'), rc = document.getElementById('rc'), rid = document.getElementById('rid'), rtr = document.getElementById('rtr'), rev = document.getElementById('reveal');
+  function targetHex(d){ var big = (1n << 256n) / BigInt(Math.max(1, Math.floor(d))); return big.toString(16).padStart(64, '0'); }
+  function fmt(n){ return n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : Math.round(n).toString(); }
+  function paint(){ document.getElementById('rate').textContent = fmt(rate); document.getElementById('diff').textContent = fmt(diff); document.getElementById('tries').textContent = fmt(tries); document.getElementById('eta').textContent = rate > 0 ? '~' + Math.round(diff / rate) + ' s' : '—'; }
+  if(col.length){ var last = col[col.length - 1]; var t0 = Pig.draw(rc, last.hash); rid.textContent = '#' + idOf(last.hash); rtr.textContent = Pig.label(t0); } else Pig.draw(rc, '0'.repeat(64));
+  paint();
+  function start(){
+    if(!window.Worker || !crypto.subtle){ hl.textContent = 'this browser cannot hash'; return; }
+    W = new Worker('miner.js'); on = true; go.textContent = 'STOP'; go.classList.add('on'); hl.innerHTML = 'digging <b>' + seed + ':…</b>';
+    W.onmessage = function(e){ var m = e.data;
+      if(m.type === 'rate'){ rate = m.rate; tries += Math.round(m.rate * .5); hl.innerHTML = 'digging <b>' + seed + ':' + m.nonce + '</b> · target <b>' + targetHex(diff).slice(0, 12) + '…</b>'; diff = Math.max(2000, Math.round(diff * .9 + rate * TARGET_S * .1)); localStorage.setItem(KEY + ':diff', diff); W.postMessage({ type: 'target', target: targetHex(diff) }); paint(); }
+      if(m.type === 'found'){ var t = Pig.draw(rc, m.hash); rid.textContent = '#' + idOf(m.hash); rtr.textContent = Pig.label(t); rev.classList.remove('flash'); void rev.offsetWidth; rev.classList.add('flash'); col.push({ hash: m.hash, nonce: m.nonce, seed: m.seed, at: Date.now() }); localStorage.setItem(KEY, JSON.stringify(col)); renderCol(); hl.innerHTML = 'dug up <b>' + m.hash + '</b>'; }
+    };
+    W.postMessage({ type: 'start', seed: seed, nonce: Math.floor(Math.random() * 1e9), target: targetHex(diff) });
+  }
+  function stop(){ if(W){ W.postMessage({ type: 'stop' }); W.terminate(); W = null; } on = false; rate = 0; go.textContent = 'DIG'; go.classList.remove('on'); paint(); }
+  go.addEventListener('click', function(){ on ? stop() : start(); });
+  addEventListener('pagehide', stop);
+})();
+</script>
+</body>
+</html>
